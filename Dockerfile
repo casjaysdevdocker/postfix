@@ -1,8 +1,7 @@
-# syntax=docker/dockerfile:1
 # Docker image for postfix using the alpine template
 ARG IMAGE_NAME="postfix"
 ARG PHP_SERVER="postfix"
-ARG BUILD_DATE="202410220938"
+ARG BUILD_DATE="202509161149"
 ARG LANGUAGE="en_US.UTF-8"
 ARG TIMEZONE="America/New_York"
 ARG WWW_ROOT_DIR="/usr/local/share/httpd/default"
@@ -25,7 +24,7 @@ ARG IMAGE_REPO="casjaysdevdocker/postfix"
 ARG IMAGE_VERSION="latest"
 ARG CONTAINER_VERSION=""
 
-ARG PULL_URL="alpine"
+ARG PULL_URL="casjaysdev/alpine"
 ARG DISTRO_VERSION="${IMAGE_VERSION}"
 ARG BUILD_VERSION="${BUILD_DATE}"
 
@@ -75,9 +74,9 @@ RUN set -e; \
   echo "Updating the system and ensuring bash is installed"; \
   pkmgr update;pkmgr install bash
 
-RUN \
+RUN set -e; \
   echo "Setting up prerequisites"; \
-  pkmgr remove ssmtp||true;pkmgr remove sendmail||true
+  true
 
 ENV SHELL="/bin/bash"
 SHELL [ "/bin/bash", "-c" ]
@@ -124,7 +123,6 @@ RUN echo "Updating system files "; \
   pip_bin="$(command -v python3 2>/dev/null || command -v python2 2>/dev/null || command -v python 2>/dev/null || true)"; \
   py_version="$(command $pip_bin --version | sed 's|[pP]ython ||g' | awk -F '.' '{print $1$2}' | grep '[0-9]' || true)"; \
   [ "$py_version" -gt "310" ] && pip_opts="--break-system-packages " || pip_opts=""; \
-  if [ -n "$pip_bin" ];then $pip_bin -m pip install --break-system-packages certbot-dns-rfc2136 certbot-dns-duckdns certbot-dns-cloudflare certbot-nginx $pip_opts || true;fi; \
   [ -f "/usr/share/zoneinfo/${TZ}" ] && ln -sf "/usr/share/zoneinfo/${TZ}" "/etc/localtime" || true; \
   [ -n "$PHP_BIN" ] && [ -z "$(command -v php 2>/dev/null)" ] && ln -sf "$PHP_BIN" "/usr/bin/php" 2>/dev/null || true; \
   [ -n "$PHP_FPM" ] && [ -z "$(command -v php-fpm 2>/dev/null)" ] && ln -sf "$PHP_FPM" "/usr/bin/php-fpm" 2>/dev/null || true; \
@@ -138,7 +136,7 @@ RUN echo "Updating system files "; \
 
 RUN echo "Custom Settings"; \
   $SHELL_OPTS; \
-  echo ""
+echo ""
 
 RUN echo "Setting up users and scripts "; \
   $SHELL_OPTS; \
@@ -155,7 +153,7 @@ RUN echo "Setting OS Settings "; \
 
 RUN echo "Custom Applications"; \
   $SHELL_OPTS; \
-  echo ""
+echo ""
 
 RUN echo "Running custom commands"; \
   if [ -f "/root/docker/setup/05-custom.sh" ];then echo "Running the custom script";/root/docker/setup/05-custom.sh||{ echo "Failed to execute /root/docker/setup/05-custom.sh" && exit 10; };echo "Done running the custom script";fi; \
@@ -221,8 +219,8 @@ LABEL org.opencontainers.image.authors="${LICENSE}"
 LABEL org.opencontainers.image.created="${BUILD_DATE}"
 LABEL org.opencontainers.image.version="${BUILD_VERSION}"
 LABEL org.opencontainers.image.schema-version="${BUILD_VERSION}"
-LABEL org.opencontainers.image.url="https://hub.docker.com/r/casjaysdevdocker/postfix"
-LABEL org.opencontainers.image.source="https://hub.docker.com/r/casjaysdevdocker/postfix"
+LABEL org.opencontainers.image.url="docker.io"
+LABEL org.opencontainers.image.source="docker.io"
 LABEL org.opencontainers.image.vcs-type="Git"
 LABEL org.opencontainers.image.revision="${BUILD_VERSION}"
 LABEL org.opencontainers.image.source="https://github.com/casjaysdevdocker/postfix"
@@ -254,6 +252,5 @@ VOLUME [ "/config","/data" ]
 
 EXPOSE ${SERVICE_PORT} ${ENV_PORTS}
 
-CMD [ "tail", "-f", "/dev/null" ]
-ENTRYPOINT [ "tini","--","/usr/local/bin/entrypoint.sh" ]
+ENTRYPOINT [ "tini","--","/usr/local/bin/entrypoint.sh" "start" ]
 HEALTHCHECK --start-period=10m --interval=5m --timeout=15s CMD [ "/usr/local/bin/entrypoint.sh", "healthcheck" ]
