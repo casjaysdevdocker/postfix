@@ -19,38 +19,39 @@ dockermgr update postfix
 ## Install and run container
   
 ```shell
-mkdir -p "$HOME/.local/share/srv/docker/postfix/volumes"
+dockerHome="/var/lib/srv/$USER/docker/casjaysdevdocker/postfix/postfix/latest/rootfs"
+mkdir -p "/var/lib/srv/$USER/docker/postfix/rootfs"
 git clone "https://github.com/dockermgr/postfix" "$HOME/.local/share/CasjaysDev/dockermgr/postfix"
-cp -Rfva "$HOME/.local/share/CasjaysDev/dockermgr/postfix/rootfs/." "$HOME/.local/share/srv/docker/postfix/volumes/"
+cp -Rfva "$HOME/.local/share/CasjaysDev/dockermgr/postfix/rootfs/." "$dockerHome/"
 docker run -d \
-  --name casjaysdevdocker-postfix-latest \
-  --hostname $HOSTNAME \
-  -e "HOSTNAME=$HOSTNAME" \
-  -e "DOMAINS=example.com,example2.com" \
-  -v "$HOME/.local/share/CasjaysDev/dockermgr/postfix/volumes/data:/data" \
-  -v "$HOME/.local/share/CasjaysDev/dockermgr/postfix/volumes/config:/config" \
-  -p 25:25 \
-  casjaysdevdocker/postfix:latest
+--restart always \
+--privileged \
+--name casjaysdevdocker-postfix-latest \
+--hostname postfix \
+-e TZ=${TIMEZONE:-America/New_York} \
+-v "$dockerHome/data:/data:z" \
+-v "$dockerHome/config:/config:z" \
+-p 80:80 \
+casjaysdevdocker/postfix:latest
 ```
   
 ## via docker-compose  
   
 ```yaml
-version: '3.9'
+version: "2"
 services:
-    postfix:
-        privileged: true
-        hostname: $HOSTNAME
-        image: 'casjaysdevdocker/postfix:latest'
-        container_name: casjaysdevdocker-postfix-latest
-        ports:
-            - '25:25'
-        volumes:
-            - "$HOME/.local/share/CasjaysDev/dockermgr/postfix/volumes/data:/data"
-            - "$HOME/.local/share/CasjaysDev/dockermgr/postfix/volumes/config:/config"
-        environment:
-            - "HOSTNAME=$HOSTNAME"
-            - "DOMAINS=example.com,example2.com"
+  ProjectName:
+    image: casjaysdevdocker/postfix
+    container_name: casjaysdevdocker-postfix
+    environment:
+      - TZ=America/New_York
+      - HOSTNAME=postfix
+    volumes:
+      - "/var/lib/srv/$USER/docker/casjaysdevdocker/postfix/postfix/latest/rootfs/data:/data:z"
+      - "/var/lib/srv/$USER/docker/casjaysdevdocker/postfix/postfix/latest/rootfs/config:/config:z"
+    ports:
+      - 80:80
+    restart: always
 ```
   
 ## Get source files  
